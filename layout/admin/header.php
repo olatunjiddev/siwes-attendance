@@ -2,12 +2,11 @@
 require_once './session.php';
 
 
-if(@!$_SESSION['student']){
-    redirect('../index.php');
+if(@!$_SESSION['admin']){
+    redirect('../admin/login.php');
 }
 
-$student = $_SESSION['student'];
-
+$admin = $_SESSION['admin'];
 
 
 ?>
@@ -17,7 +16,7 @@ $student = $_SESSION['student'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($page_title) ? $page_title : 'Student Dashboard'; ?></title>
+    <title><?php echo isset($page_title) ? $page_title : 'Admin Dashboard'; ?></title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
@@ -66,7 +65,7 @@ $student = $_SESSION['student'];
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-calendar-check"></i> Student Attendance System
+                <i class="bi bi-calendar-check"></i> Admin Attendance System
             </a>
             <div class="d-flex align-items-center">
                 <div class="dropdown">
@@ -74,10 +73,10 @@ $student = $_SESSION['student'];
                         <i class="bi bi-person-circle"></i> <?php echo $student['name']; ?>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="../student/profile.php"><i class="bi bi-person"></i> Profile</a></li>
+                        <li><a class="dropdown-item" href="../admin/profile.php"><i class="bi bi-person"></i> Profile</a></li>
                         <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="../student/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        <li><a class="dropdown-item" href="../admin/logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                     </ul>
                 </div>
             </div>

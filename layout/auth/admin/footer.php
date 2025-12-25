@@ -4,7 +4,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6 text-center text-md-start">
-                    <p class="mb-0 text-muted">&copy; <?php echo date('Y'); ?> Student Attendance System. All rights reserved.</p>
+                    <p class="mb-0 text-muted">&copy; <?php echo date('Y'); ?> Admin Attendance System. All rights reserved.</p>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
                     <p class="mb-0 text-muted">Designed for Educational Purposes</p>

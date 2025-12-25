@@ -1,7 +1,7 @@
 <?php
 // Kaywhytee Template Code
 
-session_start();
+// session_start();
 function dbConnect(){
     $servername = "localhost";
     $username = "root";//DATABASE USERNAME
