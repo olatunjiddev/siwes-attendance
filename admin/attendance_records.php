@@ -1,5 +1,8 @@
 <?php
 // session_start();
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 $page_title = "Attendance Records";
 require_once '../include/config.php';
 
@@ -10,20 +13,24 @@ if (!isset($_SESSION['admin'])) {
 }
 
 /* ================= FETCH ATTENDANCE RECORDS ================= */
-$recordsStmt = $conn->query("
+$sql = "
     SELECT 
         ar.id,
         s.name,
         s.email_address,
         ad.date AS attendance_date,
         ar.status,
-        ar.marked_at
+        ar.marked_at,
+        ar.attendance_score
     FROM attendance_records ar
     JOIN students s ON s.id = ar.student_id
     JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     ORDER BY ad.date DESC, ar.marked_at DESC
-");
-$attendanceRecords = $recordsStmt->fetchAll(PDO::FETCH_ASSOC);
+";
+
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$attendanceRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 require_once '../layout/admin/header.php';
 ?>
@@ -65,7 +72,7 @@ require_once '../layout/admin/header.php';
                     All Attendance Records
                 </div>
                 <div class="card-body table-responsive">
-                    <table class="table table-hover table-bordered">
+                    <table class="table table-hover table-bordered align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th>#</th>
@@ -84,24 +91,25 @@ require_once '../layout/admin/header.php';
                                         <td><?= $index + 1 ?></td>
                                         <td><?= htmlspecialchars($record['name']) ?></td>
                                         <td><?= htmlspecialchars($record['email_address']) ?></td>
-                                        <td><?= $record['attendance_date'] ?></td>
+                                        <td><?= date('Y-m-d', strtotime($record['attendance_date'])) ?></td>
                                         <td>
                                             <span class="badge bg-<?= $record['status'] === 'present' ? 'success' : 'danger' ?>">
                                                 <?= ucfirst($record['status']) ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <?= $record['marked_at']
-                                                ? date('h:i A', strtotime($record['marked_at']))
+                                            <?= $record['marked_at'] 
+                                                ? date('h:i A', strtotime($record['marked_at'])) 
                                                 : '-' ?>
                                         </td>
                                         <td>
                                             <?= $record['status'] === 'present' ? '100%' : '0%' ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">
+                                    <td colspan="7" class="text-center text-muted">
                                         No attendance records found.
                                     </td>
                                 </tr>

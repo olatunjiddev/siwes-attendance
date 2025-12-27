@@ -2,16 +2,20 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+// session_start();
 $page_title = "Student Dashboard";
 
 require_once '../include/config.php';
 require_once '../layout/student/header.php';
 
-// ================== AUTH / SESSION ==================
+/* ================== AUTH / SESSION ================== */
+if (!isset($_SESSION['student']['id'])) {
+    header('Location: login.php');
+    exit;
+}
 $student_id = $_SESSION['student']['id'];
 
-
-// ================== STUDENT INFO ==================
+/* ================== STUDENT INFO ================== */
 $studentStmt = $conn->prepare("
     SELECT email_address 
     FROM students 
@@ -20,51 +24,52 @@ $studentStmt = $conn->prepare("
 $studentStmt->execute([$student_id]);
 $student = $studentStmt->fetch(PDO::FETCH_ASSOC);
 
-// ================== TOTAL ATTENDANCE ==================
+/* ================== TOTAL ATTENDANCE ================== */
 $totalStmt = $conn->prepare("
-    SELECT COUNT(*) 
-    FROM attendance_records 
-    WHERE student_id = ?
+    SELECT COUNT(ar.id)
+    FROM attendance_records ar
+    JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
+    WHERE ar.student_id = ?
 ");
 $totalStmt->execute([$student_id]);
-$total_days = (int) $totalStmt->fetchColumn();
+$total_days = (int)($totalStmt->fetchColumn() ?? 0);
 
-// ================== PRESENT DAYS ==================
+/* ================== PRESENT DAYS ================== */
 $presentStmt = $conn->prepare("
-    SELECT COUNT(*) 
-    FROM attendance_records 
-    WHERE student_id = ? AND status = 'present'
+    SELECT COUNT(ar.id)
+    FROM attendance_records ar
+    WHERE ar.student_id = ?
+    AND ar.status = 'present'
 ");
 $presentStmt->execute([$student_id]);
-$present_days = (int) $presentStmt->fetchColumn();
+$present_days = (int)($presentStmt->fetchColumn() ?? 0);
 
-// ================== ABSENT DAYS ==================
-$absent_days = $total_days - $present_days;
+/* ================== ABSENT DAYS ================== */
+$absent_days = max(0, $total_days - $present_days);
 
-// ================== ATTENDANCE PERCENTAGE ==================
+/* ================== ATTENDANCE PERCENTAGE ================== */
 $attendance_percentage = $total_days > 0
     ? round(($present_days / $total_days) * 100)
     : 0;
 
-// ================== THIS MONTH ==================
+/* ================== THIS MONTH ================== */
 $monthStmt = $conn->prepare("
     SELECT 
         COUNT(ar.id) AS total,
-        SUM(ar.status = 'present') AS present
+        SUM(CASE WHEN ar.status='present' THEN 1 ELSE 0 END) AS present
     FROM attendance_records ar
     JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     WHERE ar.student_id = ?
-    AND MONTH(ad.date) = MONTH(CURRENT_DATE())
-    AND YEAR(ad.date) = YEAR(CURRENT_DATE())
+    AND MONTH(ad.hosted_at) = MONTH(CURRENT_DATE())
+    AND YEAR(ad.hosted_at) = YEAR(CURRENT_DATE())
 ");
 $monthStmt->execute([$student_id]);
 $month = $monthStmt->fetch(PDO::FETCH_ASSOC);
 
-// Default values
-$month_total = (int) ($month['total'] ?? 0);
-$month_present = (int) ($month['present'] ?? 0);
+$month_total   = (int)($month['total'] ?? 0);
+$month_present = (int)($month['present'] ?? 0);
 
-// ================== RECENT ATTENDANCE ==================
+/* ================== RECENT ATTENDANCE ================== */
 $recentStmt = $conn->prepare("
     SELECT 
         ad.date AS attendance_date,
@@ -73,16 +78,17 @@ $recentStmt = $conn->prepare("
     FROM attendance_records ar
     JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     WHERE ar.student_id = ?
-    ORDER BY ad.date DESC
+    ORDER BY ad.hosted_at DESC
     LIMIT 5
 ");
 $recentStmt->execute([$student_id]);
 $recentAttendance = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// ================== STATUS ==================
+/* ================== STATUS ================== */
 $current_status = $attendance_percentage >= 75 ? 'Good Standing' : 'At Risk';
 $status_class  = $attendance_percentage >= 75 ? 'success' : 'danger';
 ?>
+
 
 <div class="container-fluid">
     <div class="row">
@@ -117,7 +123,7 @@ $status_class  = $attendance_percentage >= 75 ? 'success' : 'danger';
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">Dashboard</h2>
                 <span class="text-muted">
-                    Welcome back! <?= htmlspecialchars($student['email_address']) ?>
+                    Welcome back! <?= htmlspecialchars($student['email_address'] ?? 'Student') ?>
                 </span>
             </div>
 
@@ -218,15 +224,11 @@ $status_class  = $attendance_percentage >= 75 ? 'success' : 'danger';
                                                 <td><?= htmlspecialchars($row['attendance_date']) ?></td>
                                                 <td><?= date('l', strtotime($row['attendance_date'])) ?></td>
                                                 <td>
-                                                    <?php if ($row['status'] === 'present'): ?>
-                                                        <span class="badge bg-success">Present</span>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-danger">Absent</span>
-                                                    <?php endif; ?>
+                                                    <span class="badge bg-<?= $row['status'] === 'present' ? 'success' : 'danger' ?>">
+                                                        <?= ucfirst($row['status']) ?>
+                                                    </span>
                                                 </td>
-                                                <td>
-                                                    <?= $row['marked_at'] ? date('h:i A', strtotime($row['marked_at'])) : '-' ?>
-                                                </td>
+                                                <td><?= $row['marked_at'] ? date('h:i A', strtotime($row['marked_at'])) : '-' ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

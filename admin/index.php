@@ -1,12 +1,12 @@
 <?php
+// session_start();
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-$page_title = "Admin Dashboard";
-
-require_once '../include/config.php';
+require_once '../include/config.php'; // Database connection
 require_once '../layout/admin/header.php';
-require_once '../include/func.php';
+
+$page_title = "Admin Dashboard";
 
 /* ================= AUTH CHECK ================= */
 if (!isset($_SESSION['admin'])) {
@@ -14,65 +14,55 @@ if (!isset($_SESSION['admin'])) {
     exit;
 }
 
-/* ================= AUTO-MARK PAST UNMARKED ATTENDANCE ================= */
-autoMarkAbsent($conn);
-
-/* ================= TODAY AUTO-ABSENT STATUS ================= */
+/* ================= TODAY ATTENDANCE STATUS ================= */
 $today = date('Y-m-d');
-$current_time = date('H:i:s');
-$cutoff_time = '10:00:00';
+$attendance_status = 'Not Hosted';
+$unmarked_students = 0;
 
-// Check if attendance is hosted today
-$stmt = $conn->prepare("SELECT id FROM attendance_dates WHERE date = ?");
+// Fetch today's attendance date
+$stmt = $conn->prepare("SELECT id, hosted_at, closed FROM attendance_dates WHERE date = ?");
 $stmt->execute([$today]);
 $today_date = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$unmarked_students = 0;
-$auto_absent_ran = false;
-
 if ($today_date) {
-    // Count students NOT marked today
-    $stmt = $conn->prepare("
-        SELECT COUNT(*) FROM students s
+    $hosted_at_time = strtotime($today_date['hosted_at'] ?? '');
+    $now = time();
+
+    // Count students not marked today
+    $stmt2 = $conn->prepare("
+        SELECT COUNT(*) 
+        FROM students s
         WHERE NOT EXISTS (
-            SELECT 1 FROM attendance_records ar
+            SELECT 1 
+            FROM attendance_records ar
             WHERE ar.student_id = s.id
             AND ar.attendance_date_id = ?
         )
     ");
-    $stmt->execute([$today_date['id']]);
-    $unmarked_students = (int)$stmt->fetchColumn();
+    $stmt2->execute([$today_date['id']]);
+    $unmarked_students = (int)$stmt2->fetchColumn();
 
-    // Check if auto-absent already ran today
-    $stmt = $conn->prepare("
-        SELECT COUNT(*) FROM attendance_records
-        WHERE attendance_date_id = ?
-        AND status = 'absent'
-    ");
-    $stmt->execute([$today_date['id']]);
-    $auto_absent_ran = $stmt->fetchColumn() > 0 && $unmarked_students === 0;
+    // Determine status
+    if (!empty($today_date['closed'])) {
+        $attendance_status = 'Closed';
+    } elseif ($unmarked_students > 0) {
+        $attendance_status = 'Pending';
+    } else {
+        $attendance_status = 'Completed';
+    }
 }
 
 /* ================= STATISTICS ================= */
-
-// Total students
 $total_students = (int)$conn->query("SELECT COUNT(*) FROM students")->fetchColumn();
-
-// Total attendance records
-$total_attendance = (int)$conn->query("SELECT COUNT(*) FROM attendance_records")->fetchColumn();
-
-// Total present
 $total_present = (int)$conn->query("SELECT COUNT(*) FROM attendance_records WHERE status = 'present'")->fetchColumn();
-
-// Total absent
 $total_absent = (int)$conn->query("SELECT COUNT(*) FROM attendance_records WHERE status = 'absent'")->fetchColumn();
 
 /* ================= THIS MONTH SUMMARY ================= */
 $monthStmt = $conn->query("
     SELECT 
         COUNT(*) AS total,
-        SUM(status = 'present') AS present,
-        SUM(status = 'absent') AS absent
+        SUM(ar.status = 'present') AS present,
+        SUM(ar.status = 'absent') AS absent
     FROM attendance_records ar
     JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     WHERE MONTH(ad.date) = MONTH(CURRENT_DATE())
@@ -94,11 +84,11 @@ $recentStmt = $conn->query("
     LIMIT 10
 ");
 $recentAttendance = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <div class="container-fluid">
     <div class="row">
-
         <!-- Sidebar -->
         <div class="col-md-3 col-lg-2 sidebar p-3">
             <div class="text-center mb-4">
@@ -116,84 +106,58 @@ $recentAttendance = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10">
-
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0">Dashboard</h2>
-                <span class="text-muted">Welcome back, <?= htmlspecialchars($_SESSION['admin']['email_address']) ?></span>
+                <span class="text-muted">Welcome back, <?= htmlspecialchars($_SESSION['admin']['email_address'] ?? 'Admin') ?></span>
             </div>
 
-            <!-- Stats -->
+            <!-- Statistics Cards -->
             <div class="row mb-4">
-
-                <div class="col-md-3 mb-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body d-flex justify-content-between">
-                            <div><h6 class="text-muted">Total Students</h6><h3><?= $total_students ?></h3></div>
-                            <i class="bi bi-people text-primary fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body d-flex justify-content-between">
-                            <div><h6 class="text-muted">Present Records</h6><h3><?= $total_present ?></h3></div>
-                            <i class="bi bi-check-circle text-success fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body d-flex justify-content-between">
-                            <div><h6 class="text-muted">Absent Records</h6><h3><?= $total_absent ?></h3></div>
-                            <i class="bi bi-x-circle text-danger fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body d-flex justify-content-between">
-                            <div><h6 class="text-muted">This Month</h6>
-                                <h3><?= ($month['present'] ?? 0) ?>/<?= ($month['total'] ?? 0) ?></h3>
+                <?php 
+                $stats = [
+                    ['label'=>'Total Students','value'=>$total_students,'icon'=>'bi-people','color'=>'text-primary'],
+                    ['label'=>'Present Records','value'=>$total_present,'icon'=>'bi-check-circle','color'=>'text-success'],
+                    ['label'=>'Absent Records','value'=>$total_absent,'icon'=>'bi-x-circle','color'=>'text-danger'],
+                    ['label'=>'This Month','value'=>($month['present'] ?? 0).'/'.($month['total'] ?? 0),'icon'=>'bi-calendar-month','color'=>'text-info']
+                ];
+                foreach ($stats as $stat): ?>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted"><?= $stat['label'] ?></h6>
+                                    <h3><?= $stat['value'] ?></h3>
+                                </div>
+                                <i class="bi <?= $stat['icon'] ?> <?= $stat['color'] ?> fs-1"></i>
                             </div>
-                            <i class="bi bi-calendar-month text-info fs-1"></i>
                         </div>
                     </div>
-                </div>
-
+                <?php endforeach; ?>
             </div>
 
-            <!-- Today Auto-Absent -->
+            <!-- Today's Attendance Status -->
             <div class="col-md-3 mb-3">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                        <h6 class="text-muted">Auto-Absent (Today)</h6>
-
+                        <h6 class="text-muted">Today's Attendance</h6>
                         <?php if (!$today_date): ?>
                             <span class="badge bg-secondary">Not Hosted</span>
-
-                        <?php elseif ($current_time < $cutoff_time): ?>
-                            <span class="badge bg-warning text-dark">Available at 10:00 AM</span>
-
-                        <?php elseif ($auto_absent_ran): ?>
-                            <span class="badge bg-success">Completed</span>
-
                         <?php else: ?>
-                            <span class="badge bg-danger">Pending (<?= $unmarked_students ?> students)</span>
-
-                            <!-- Auto-refresh -->
-                            <script>
-                                setInterval(() => { location.reload(); }, 30000);
-                            </script>
+                            <?php if ($attendance_status === 'Pending'): ?>
+                                <span class="badge bg-danger">Pending (<?= $unmarked_students ?> students)</span>
+                                <script>setInterval(() => { location.reload(); }, 30000);</script>
+                            <?php elseif ($attendance_status === 'Completed'): ?>
+                                <span class="badge bg-success">Completed</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Closed</span>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
 
             <!-- Recent Attendance -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mt-3">
                 <div class="card-header bg-white">
                     <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Attendance</h5>
                 </div>
@@ -214,10 +178,12 @@ $recentAttendance = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
                                 <?php foreach ($recentAttendance as $row): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($row['email_address']) ?></td>
-                                        <td><?= $row['attendance_date'] ?></td>
+                                        <td><?= date('Y-m-d', strtotime($row['attendance_date'])) ?></td>
                                         <td><?= date('l', strtotime($row['attendance_date'])) ?></td>
-                                        <td><span class="badge bg-<?= $row['status'] === 'present' ? 'success' : 'danger' ?>">
-                                            <?= ucfirst($row['status']) ?></span>
+                                        <td>
+                                            <span class="badge bg-<?= $row['status'] === 'present' ? 'success' : 'danger' ?>">
+                                                <?= ucfirst($row['status']) ?>
+                                            </span>
                                         </td>
                                         <td><?= $row['marked_at'] ? date('h:i A', strtotime($row['marked_at'])) : '-' ?></td>
                                         <td><?= $row['status'] === 'present' ? '100%' : '0%' ?></td>

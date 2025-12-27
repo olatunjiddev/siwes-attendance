@@ -1,61 +1,98 @@
 <?php
 
-function redirect($url){
-    header('Location: '.$url);
-    exit();
+/* =========================
+   BASIC HELPERS
+========================= */
+
+function redirect(string $url): void
+{
+    header('Location: ' . $url);
+    exit;
 }
 
-function addNumber($num1 , $num2){
-
+function addNumber(int|float $num1, int|float $num2): int|float
+{
     return $num1 + $num2;
-
 }
 
-/* ================= AUTO-MARK PAST UNMARKED ATTENDANCE ================= */
-function autoMarkAbsent($conn, $cutoffTime = '10:00:00') {
-    $today = date('Y-m-d');
+/* =========================
+   AUTO-MARK ABSENT FUNCTION
+========================= */
 
-    // Get all attendance dates up to today
-    $stmt = $conn->prepare("SELECT id, date FROM attendance_dates WHERE date <= ?");
-    $stmt->execute([$today]);
-    $dates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+/**
+ * Automatically marks absent students
+ * AFTER the attendance window has closed.
+ *
+ * RULES:
+ * - Attendance must be hosted
+ * - Attendance must NOT be closed
+ * - Time window must have passed
+ * - Runs only once per attendance date
+ *
+ * @param PDO $conn
+ * @param int $closeAfterMinutes Default: 60 minutes
+ */
+function autoMarkAbsent(PDO $conn, int $closeAfterMinutes = 60): void
+{
+    $now = time();
 
-    foreach ($dates as $date) {
-        $attendance_date_id = $date['id'];
-        $attendance_date = $date['date'];
+    // Fetch ONLY open attendance sessions
+    $stmt = $conn->prepare("
+        SELECT id, hosted_at
+        FROM attendance_dates
+        WHERE hosted_at IS NOT NULL
+        AND closed = 0
+    ");
+    $stmt->execute();
 
-        // Skip if auto-absent already ran
-        $stmtCheck = $conn->prepare("
-            SELECT COUNT(*) FROM attendance_records
-            WHERE attendance_date_id = ?
-            AND status = 'absent'
-        ");
-        $stmtCheck->execute([$attendance_date_id]);
-        $alreadyMarked = $stmtCheck->fetchColumn() > 0;
+    $attendanceDates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (!$alreadyMarked) {
-            $currentDate = date('Y-m-d');
-            $currentTime = date('H:i:s');
-            
-            // Only mark if past date or today after cutoff
-            if ($attendance_date < $currentDate || ($attendance_date == $currentDate && $currentTime >= $cutoffTime)) {
-                $insert = $conn->prepare("
-                    INSERT INTO attendance_records (student_id, attendance_date_id, status, marked_at, attendance_score)
-                    SELECT s.id, ?, 'absent', NULL, 0
-                    FROM students s
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM attendance_records ar
-                        WHERE ar.student_id = s.id
-                        AND ar.attendance_date_id = ?
-                    )
-                ");
-                $insert->execute([$attendance_date_id, $attendance_date_id]);
-            }
+    if (!$attendanceDates) {
+        return; // Nothing to process
+    }
+
+    foreach ($attendanceDates as $date) {
+        $attendanceDateId = (int)$date['id'];
+        $hostedAt = strtotime($date['hosted_at']);
+
+        // Safety check
+        if (!$hostedAt) {
+            continue;
         }
+
+        // Check if attendance window is still open
+        if (($now - $hostedAt) < ($closeAfterMinutes * 60)) {
+            continue;
+        }
+
+        /* =========================
+           MARK ABSENT STUDENTS
+        ========================= */
+
+        $insert = $conn->prepare("
+            INSERT INTO attendance_records
+                (student_id, attendance_date_id, status, marked_at, attendance_score)
+            SELECT
+                s.id, ?, 'absent', NOW(), 0
+            FROM students s
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM attendance_records ar
+                WHERE ar.student_id = s.id
+                AND ar.attendance_date_id = ?
+            )
+        ");
+        $insert->execute([$attendanceDateId, $attendanceDateId]);
+
+        /* =========================
+           CLOSE ATTENDANCE SESSION
+        ========================= */
+
+        $close = $conn->prepare("
+            UPDATE attendance_dates
+            SET closed = 1
+            WHERE id = ?
+        ");
+        $close->execute([$attendanceDateId]);
     }
 }
-
-// Run auto-absent at the top of dashboard
-autoMarkAbsent($conn);
-
-?>

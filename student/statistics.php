@@ -13,10 +13,15 @@ $stmt = $conn->prepare("
         SUM(ar.status = 'present') AS present_days,
         SUM(ar.status = 'absent') AS absent_days
     FROM attendance_records ar
+    JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     WHERE ar.student_id = ?
 ");
 $stmt->execute([$student_id]);
 $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$stats['total_days']   = (int)($stats['total_days'] ?? 0);
+$stats['present_days'] = (int)($stats['present_days'] ?? 0);
+$stats['absent_days']  = (int)($stats['absent_days'] ?? 0);
 
 // Attendance percentage
 $attendance_percentage = $stats['total_days'] > 0
@@ -26,14 +31,14 @@ $attendance_percentage = $stats['total_days'] > 0
 /* ================= MONTHLY STATS ================= */
 $monthlyStmt = $conn->prepare("
     SELECT 
-        MONTH(ad.date) AS month,
+        MONTH(ad.hosted_at) AS month,
         SUM(ar.status = 'present') AS present_count,
         SUM(ar.status = 'absent') AS absent_count
     FROM attendance_records ar
     JOIN attendance_dates ad ON ad.id = ar.attendance_date_id
     WHERE ar.student_id = ?
-    GROUP BY MONTH(ad.date)
-    ORDER BY MONTH(ad.date)
+    GROUP BY MONTH(ad.hosted_at)
+    ORDER BY MONTH(ad.hosted_at)
 ");
 $monthlyStmt->execute([$student_id]);
 $monthlyData = $monthlyStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -44,9 +49,9 @@ $presentCounts = [];
 $absentCounts = [];
 
 foreach ($monthlyData as $row) {
-    $months[] = date('F', mktime(0, 0, 0, $row['month'], 1));
+    $months[] = date('F', mktime(0, 0, 0, (int)$row['month'], 1));
     $presentCounts[] = (int)$row['present_count'];
-    $absentCounts[] = (int)$row['absent_count'];
+    $absentCounts[]  = (int)$row['absent_count'];
 }
 ?>
 
