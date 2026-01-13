@@ -55,23 +55,7 @@ foreach ($monthlyData as $row) {
 }
 ?>
 
-<div class="container-fluid">
-    <div class="row">
 
-        <!-- Sidebar Navigation -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-             <div class="text-center mb-4">
-                <h4 class="fw-bold text-primary mb-0">SIWES Student</h4>
-                <small class="text-muted">Attendance System</small>
-            </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                <a class="nav-link" href="attendance.php"><i class="bi bi-calendar-check"></i> My Attendance</a>
-                <a class="nav-link" href="attendance_history.php"><i class="bi bi-clock-history"></i> Attendance History</a>
-                <a class="nav-link active" href="statistics.php"><i class="bi bi-graph-up"></i> Statistics</a>
-                <a class="nav-link" href="profile.php"><i class="bi bi-person"></i> Profile</a>
-            </nav>
-        </div>
 
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10">

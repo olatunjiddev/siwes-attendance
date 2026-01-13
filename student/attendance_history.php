@@ -41,7 +41,8 @@ $historyStmt = $conn->prepare("
     SELECT 
         ad.date AS attendance_date,
         ar.status,
-        ar.marked_at
+        ar.marked_at,
+        ar.attendance_score
     FROM attendance_records ar
     JOIN attendance_dates ad 
         ON ad.id = ar.attendance_date_id
@@ -52,23 +53,6 @@ $historyStmt->execute($params);
 $history = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
-<div class="container-fluid">
-    <div class="row">
-
-        <!-- Sidebar Navigation -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-            <div class="text-center mb-4">
-                <h4 class="fw-bold text-primary mb-0">SIWES Student</h4>
-                <small class="text-muted">Attendance System</small>
-            </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="index.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                <a class="nav-link" href="attendance.php"><i class="bi bi-calendar-check"></i> My Attendance</a>
-                <a class="nav-link active" href="attendance_history.php"><i class="bi bi-clock-history"></i> Attendance History</a>
-                <a class="nav-link" href="statistics.php"><i class="bi bi-graph-up"></i> Statistics</a>
-                <a class="nav-link" href="profile.php"><i class="bi bi-person"></i> Profile</a>
-            </nav>
-        </div>
 
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10">
@@ -128,7 +112,13 @@ $history = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
                                             </span>
                                         </td>
                                         <td><?= $row['marked_at'] ? date('h:i A', strtotime($row['marked_at'])) : '-' ?></td>
-                                        <td><?= $row['status'] === 'present' ? '100%' : '0%' ?></td>
+                                        <td>
+                                            <?php if (isset($row['attendance_score']) && $row['attendance_score'] !== null && $row['attendance_score'] !== ''): ?>
+                                                <?= (int)$row['attendance_score'] ?>%
+                                            <?php else: ?>
+                                                0%
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
@@ -138,11 +128,19 @@ $history = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php endif; ?>
                         </tbody>
                     </table>
+                     <div class="mb-3">
+                <a href="export.php" class="btn btn-success">
+                    Export To Excel
+                </a>
+                <a href="attendance_pdf.php?<?= http_build_query($_GET) ?>" 
+   class="btn btn-danger">
+   <i class="bi bi-file-earmark-pdf"></i> Download PDF
+</a>
+
+            </div>
                 </div>
             </div>
 
         </div>
-    </div>
-</div>
 
 <?php require_once '../layout/student/footer.php'; ?>

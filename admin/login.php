@@ -19,7 +19,7 @@ if (isset($_POST['login'])) {
 
     if ($admin) {
         $_SESSION['admin'] = $admin;
-        header("Location: index.php");
+        header("Location:index.php");
         exit;
     } else {
         $msg = '<div class="alert alert-danger">Invalid email address or password</div>';
@@ -75,7 +75,7 @@ require_once '../layout/auth/admin/header.php';
                         </div>
 
                         <div class="text-center mt-3">
-                            <a href="#" class="text-decoration-none">Forgot password?</a>
+                            <a href="#" class="text-decoration-none text-danger">Forgot password?</a>
                         </div>
                     </form>
                 </div>

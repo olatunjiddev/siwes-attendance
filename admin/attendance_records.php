@@ -15,7 +15,8 @@ if (!isset($_SESSION['admin'])) {
 /* ================= FETCH ATTENDANCE RECORDS ================= */
 $sql = "
     SELECT 
-        ar.id,
+        ar.id AS record_id,
+        s.STUDENT_ID AS student_id,   -- ✅ Use your exact column
         s.name,
         s.email_address,
         ad.date AS attendance_date,
@@ -35,90 +36,72 @@ $attendanceRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 require_once '../layout/admin/header.php';
 ?>
 
-<div class="container-fluid">
-    <div class="row">
+<!-- Main Content -->
+<div class="col-md-9 col-lg-10">
+    <h2 class="mb-4">Attendance Records</h2>
 
-        <!-- Sidebar Navigation -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-            <div class="text-center mb-4">
-                <h4 class="fw-bold text-primary mb-0">SIWES Admin</h4>
-                <small class="text-muted">Attendance System</small>
-            </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="index.php">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
-                <a class="nav-link" href="manage_students.php">
-                    <i class="bi bi-people"></i> Manage Students
-                </a>
-                <a class="nav-link active" href="attendance_records.php">
-                    <i class="bi bi-calendar-check"></i> Attendance Records
-                </a>
-                <a class="nav-link" href="host_attendance.php">
-                    <i class="bi bi-graph-up"></i> Host Attendance
-                </a>
-                <a class="nav-link" href="profile.php">
-                    <i class="bi bi-person"></i> Profile
-                </a>
-            </nav>
+    <div class="card">
+        <div class="card-header">
+            All Attendance Records
         </div>
 
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <h2 class="mb-4">Attendance Records</h2>
+        <div class="card-body table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Marked At</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
 
-            <div class="card">
-                <div class="card-header">
-                    All Attendance Records
-                </div>
-                <div class="card-body table-responsive">
-                    <table class="table table-hover table-bordered align-middle">
-                        <thead class="table-light">
+                <tbody>
+                    <?php if (!empty($attendanceRecords)): ?>
+                        <?php foreach ($attendanceRecords as $record): ?>
                             <tr>
-                                <th>#</th>
-                                <th>Student Name</th>
-                                <th>Email</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Marked At</th>
-                                <th>Score</th>
+                                <td><?= htmlspecialchars($record['student_id']) ?></td>
+                                <td><?= htmlspecialchars($record['name']) ?></td>
+                                <td><?= htmlspecialchars($record['email_address']) ?></td>
+                                <td><?= date('Y-m-d', strtotime($record['attendance_date'])) ?></td>
+                                <td>
+                                    <span class="badge bg-<?= $record['status'] === 'present' ? 'success' : 'danger' ?>">
+                                        <?= ucfirst($record['status']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?= $record['marked_at']
+                                        ? date('h:i A', strtotime($record['marked_at']))
+                                        : '-' ?>
+                                </td>
+                                <td>
+                                    <?= is_numeric($record['attendance_score'])
+                                        ? htmlspecialchars($record['attendance_score']) . '%'
+                                        : '0%' ?>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($attendanceRecords)): ?>
-                                <?php foreach ($attendanceRecords as $index => $record): ?>
-                                    <tr>
-                                        <td><?= $index + 1 ?></td>
-                                        <td><?= htmlspecialchars($record['name']) ?></td>
-                                        <td><?= htmlspecialchars($record['email_address']) ?></td>
-                                        <td><?= date('Y-m-d', strtotime($record['attendance_date'])) ?></td>
-                                        <td>
-                                            <span class="badge bg-<?= $record['status'] === 'present' ? 'success' : 'danger' ?>">
-                                                <?= ucfirst($record['status']) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?= $record['marked_at'] 
-                                                ? date('h:i A', strtotime($record['marked_at'])) 
-                                                : '-' ?>
-                                        </td>
-                                        <td>
-                                            <?= $record['status'] === 'present' ? '100%' : '0%' ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">
-                                        No attendance records found.
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                No attendance records found.
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
 
+            <div class="mt-3">
+                <a href="export_excel.php?type=attendance" class="btn btn-primary">
+                    Export To Excel
+                </a>
+                <a href="attendance_pdf.php?type=attendance" class="btn btn-danger">
+                    Download PDF
+                </a>
+            </div>
         </div>
     </div>
 </div>

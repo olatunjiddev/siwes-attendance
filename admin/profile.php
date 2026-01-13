@@ -54,24 +54,6 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 require_once '../layout/admin/header.php';
 ?>
 
-<div class="container-fluid">
-    <div class="row">
-
-        <!-- Sidebar Navigation -->
-        <div class="col-md-3 col-lg-2 sidebar p-3">
-            <div class="text-center mb-4">
-                <h4 class="fw-bold text-primary mb-0">SIWES Admin</h4>
-                <small class="text-muted">Attendance System</small>
-            </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="index.php">Dashboard</a>
-                <a class="nav-link" href="manage_students.php">Manage Students</a>
-                <a class="nav-link" href="attendance_records.php">Attendance Records</a>
-                <a class="nav-link" href="host_attendance.php">Host Attendance</a>
-                <a class="nav-link active" href="profile.php">Profile</a>
-            </nav>
-        </div>
-
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10">
             <h2 class="mb-4">Admin Profile</h2>
@@ -103,7 +85,6 @@ require_once '../layout/admin/header.php';
             </div>
 
         </div>
-    </div>
-</div>
+ 
 
 <?php require_once '../layout/admin/footer.php'; ?>

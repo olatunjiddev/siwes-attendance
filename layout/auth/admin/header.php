@@ -43,8 +43,8 @@
     <header class="logo-header">
         <div class="container">
             <div class="d-flex align-items-center justify-content-center">
-                <i class="bi bi-calendar-check text-primary" style="font-size: 2.5rem; margin-right: 1rem;"></i>
-                <span class="logo-text">Admin Attendance System</span>
+                <i class="bi bi-calendar-check text-danger" style="font-size: 2.5rem; margin-right: 1rem;"></i>
+                <span class="logo-text text-danger">Admin Attendance System</span>
             </div>
         </div>
     </header>
