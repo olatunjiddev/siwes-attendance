@@ -92,7 +92,7 @@ $recentAttendance = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="col-md-9 col-lg-10">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Dashboard</h2>
-        <span class="text-muted">Welcome back, <?= htmlspecialchars($_SESSION['admin']['email_address'] ?? 'Admin') ?></span>
+        <span class="text-muted pr-5">Welcome back, <?= htmlspecialchars($_SESSION['admin']['name'] ?? 'Admin') ?></span>
     </div>
 
     <!-- Today's Attendance Status -->

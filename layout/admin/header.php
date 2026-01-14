@@ -74,37 +74,17 @@ $page_title = $page_title ?? 'Admin Dashboard';
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container-fluid">
-
+        
         <!-- Sidebar Toggle Button (Mobile Only) -->
-        <button class="btn btn-light d-lg-none me-2" id="sidebarToggle">
+        <button class="btn btn-primary d-lg-none me-2" id="sidebarToggle">
             <i class="bi bi-list"></i>
         </button>
 
         <a class="navbar-brand fw-bold" href="#">
             <i class="bi bi-calendar-check"></i> Admin Attendance System
         </a>
-
-        <div class="dropdown">
-            <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i> <?= htmlspecialchars($admin['admin']) ?>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <!-- <li>
-                    <a class="dropdown-item" href="profile.php">
-                        <i class="bi bi-person"></i> Profile
-                    </a>
-                </li> -->
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <a class="dropdown-item" href="logout.php">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-
     </div>
 </nav>
 
@@ -124,7 +104,7 @@ $page_title = $page_title ?? 'Admin Dashboard';
                 <a class="nav-link" href="manage_students.php"><i class="bi bi-people"></i> Students</a>
                 <a class="nav-link" href="attendance_records.php"><i class="bi bi-calendar-check"></i> Attendance Records</a>
                 <a class="nav-link" href="host_attendance.php"><i class="bi bi-graph-up"></i> Host Attendance</a>
-                <!-- <a class="nav-link" href="profile.php"><i class="bi bi-person"></i> Profile</a> -->
+                <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
        
             </nav>
         </aside>

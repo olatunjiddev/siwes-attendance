@@ -241,13 +241,11 @@ require_once '../layout/admin/header.php';
                 </tbody>
             </table>
         </div>
-        <div class="mb-3">
-             <a href="export_excel.php?type=students" class="btn btn-success">
+        <div class="mb-3 p-3">
+             <a href="export_excel.php?type=students" class="btn btn-success mb-3">
     Export Students Excel
 </a>
-                <a href="attendance_pdf.php?type=students" class="btn btn-danger">
-    Download Students PDF
-</a>
+                <a href="attendance_pdf.php?type=students" class="btn btn-danger mb-3">Download Students PDF</a>
             </div>
 
     </div>

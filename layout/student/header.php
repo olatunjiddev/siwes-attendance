@@ -74,21 +74,26 @@ $page_title = $page_title ?? 'Student Dashboard';
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container-fluid d-flex align-items-center">
 
-        <!-- Sidebar Toggle Button (Mobile Only) -->
-        <button class="btn btn-light d-lg-none me-2" id="sidebarToggle">
-            <i class="bi bi-list"></i>
-        </button>
+        <!-- Left: Toggle + Brand -->
+        <div class="d-flex align-items-center">
+            <!-- Sidebar Toggle Button (Mobile Only) -->
+            <button class="btn btn-primary d-lg-none me-2" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
 
-        <a class="navbar-brand fw-bold" href="#">
-            <i class="bi bi-calendar-check"></i> Student Attendance System
-        </a>
+            <a class="navbar-brand fw-bold mb-0" href="#">
+                <i class="bi bi-calendar-check"></i> Student Attendance System
+            </a>
+        </div>
 
-        <div class="dropdown">
+        <!-- Right: Profile Dropdown (Hidden on sm & xs) -->
+        <div class="dropdown d-none d-md-block">
             <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i> <?= htmlspecialchars($student['name']) ?>
+                <i class="bi bi-person-circle"></i>
+                <?= htmlspecialchars($student['name']) ?>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
@@ -135,6 +140,7 @@ $page_title = $page_title ?? 'Student Dashboard';
                 <a class="nav-link" href="profile.php">
                     <i class="bi bi-person"></i> Profile
                 </a>
+                <a class="nav-link" href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a>
             </nav>
         </aside>
 
