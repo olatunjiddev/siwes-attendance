@@ -7,7 +7,7 @@ use Dompdf\Options;
 
 /* ================= AUTH ================= */
 if (!isset($_SESSION['student']['id'])) {
-    header('Location: login.php');
+    header('Location: ../index.php'); 
     exit;
 }
 
